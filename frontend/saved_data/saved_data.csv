@@ -1,0 +1,6 @@
+latitude,longitude,run_num,seq_num,abstractSignalStr,movingSpeed,compassDirection,nrStatus,lte_rssi,lte_rsrp,lte_rsrq,lte_rssnr,nr_ssRsrp,nr_ssRsrq,nr_ssSinr,mobility_mode,trajectory_direction,tower_id
+44.97437311,-93.26294764,1,1.0,2,0.09488939755,150.0,NOT_RESTRICTED,-61.0,-94.0,-14.0,2147483647.0,-92.0,-12.0,10.0,driving,CW,16
+44.97405435,-93.27990389,1,1.0,2,0.09488939755,150.0,CONNECTED,-61.0,-94.0,-14.0,-21.0,-92.0,-11.0,10.0,walking,CW,16
+44.97585245,-93.26238797,1,1.0,2,0.09488939755,150.0,NOT_RESTRICTED,-61.0,-94.0,-14.0,2147483647.0,-94.0,-14.0,0.0,driving,CW,16
+44.97531395,-93.25931635,1,1.0,2,0.09488939755,150.0,NOT_RESTRICTED,-61.0,-94.0,-14.0,2147483647.0,-94.0,-14.0,0.0,driving,CW,16
+44.97531395,-93.25931635,1,1.0,2,0.09488939755,150.0,NOT_RESTRICTED,-61.0,-94.0,-14.0,2147483647.0,-94.0,-14.0,0.0,driving,CW,16

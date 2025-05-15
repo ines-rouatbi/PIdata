@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved 5G Network Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Warning: For production, install Tailwind CSS as a PostCSS plugin or use Tailwind CLI: https://tailwindcss.com/docs/installation -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a40 0%, #2e2e5c 50%, #4a4a80 100%);
+            color: #e0e7ff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 2.5rem;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            animation: fadeIn 1.2s ease-in-out;
+            max-width: 95%;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid #00d4ff;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        .data-table th {
+            background: linear-gradient(90deg, #00d4ff, #00ffaa);
+            color: #1a1a40;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .data-table tr {
+            transition: background 0.3s ease;
+        }
+        .data-table tr:hover {
+            background: rgba(0, 255, 255, 0.1);
+            cursor: pointer;
+        }
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            transition: all 0.4s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-predict {
+            background: linear-gradient(90deg, #00d4ff, #00ffaa);
+        }
+        .btn-predict:hover {
+            background: linear-gradient(90deg, #00ffaa, #00d4ff);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn-back {
+            background: linear-gradient(90deg, #ff007a, #ff00ff);
+        }
+        .btn-back:hover {
+            background: linear-gradient(90deg, #ff00ff, #ff007a);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .prediction-result {
+            animation: slideIn 0.7s ease-in-out;
+            background: rgba(0, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #00d4ff;
+        }
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+                max-width: 98%;
+            }
+            .btn {
+                padding: 0.5rem 1.5rem;
+                font-size: 0.875rem;
+            }
+            .data-table th, .data-table td {
+                padding: 0.5rem;
+                font-size: 0.875rem;
+            }
+            .data-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-bold">Saved 5G Network Data</h2>
+            <button id="backBtn" class="btn btn-back">Back to Input</button>
+        </div>
+        <div id="dataContainer" class="mb-6">
+            {% if data %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Run Num</th>
+                            <th>Seq Num</th>
+                            <th>Abstract Signal Str</th>
+                            <th>Moving Speed</th>
+                            <th>Compass Direction</th>
+                            <th>NR Status</th>
+                            <th>LTE RSSI</th>
+                            <th>LTE RSRP</th>
+                            <th>LTE RSRQ</th>
+                            <th>LTE RSSNR</th>
+                            <th>NR SS RSRP</th>
+                            <th>NR SS RSRQ</th>
+                            <th>NR SS SINR</th>
+                            <th>Mobility Mode</th>
+                            <th>Trajectory Direction</th>
+                            <th>Tower ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                            <tr>
+                                <td>{{ row.latitude }}</td>
+                                <td>{{ row.longitude }}</td>
+                                <td>{{ row.run_num }}</td>
+                                <td>{{ row.seq_num }}</td>
+                                <td>{{ row.abstractSignalStr }}</td>
+                                <td>{{ row.movingSpeed }}</td>
+                                <td>{{ row.compassDirection }}</td>
+                                <td>{{ row.nrStatus }}</td>
+                                <td>{{ row.lte_rssi }}</td>
+                                <td>{{ row.lte_rsrp }}</td>
+                                <td>{{ row.lte_rsrq }}</td>
+                                <td>{{ row.lte_rssnr }}</td>
+                                <td>{{ row.nr_ssRsrp }}</td>
+                                <td>{{ row.nr_ssRsrq }}</td>
+                                <td>{{ row.nr_ssSinr }}</td>
+                                <td>{{ row.mobility_mode }}</td>
+                                <td>{{ row.trajectory_direction }}</td>
+                                <td>{{ row.tower_id }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-center text-lg">No data available.</p>
+            {% endif %}
+        </div>
+        <div class="flex justify-center pt-4">
+            <button id="predictBtn" class="btn btn-predict">Predict on Dataset</button>
+        </div>
+        <div id="predictionResult" class="mt-4 text-center hidden prediction-result">
+            <h3 class="text-lg font-semibold mb-2">Prediction Results</h3>
+            <div id="predictionsList" class="space-y-2"></div>
+            <p class="text-lg font-semibold mt-4">Metrics:</p>
+            <ul>
+                <li>R2: <span id="metric-r2"></span></li>
+                <li>Log MAPE: <span id="metric-log-mape"></span></li>
+                <li>SMAPE: <span id="metric-smape"></span></li>
+                <li>RMSE: <span id="metric-rmse"></span></li>
+                <li>MAE: <span id="metric-mae"></span></li>
+                <li>Classification Thresholds - Low: <span id="threshold-low"></span>, Medium: <span id="threshold-medium"></span></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Back button logic
+        document.getElementById('backBtn').addEventListener('click', function() {
+            window.location.href = '/'; // Redirect to index.html
+        });
+
+        // Predict button logic
+        document.getElementById('predictBtn').addEventListener('click', async function() {
+            const filename = "{{ filename }}";
+            const formData = new FormData();
+            formData.append('filename', filename);
+
+            try {
+                const response = await fetch('/predict_from_csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Fetch error:', errorText);
+                    throw new Error(`Fetch failed with status ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                if (result.error) {
+                    console.error('Server error:', result.error);
+                    throw new Error(result.error);
+                }
+
+                // Update the UI with prediction data
+                const predictionsList = document.getElementById('predictionsList');
+                predictionsList.innerHTML = '';
+                result.predictions.forEach((pred, index) => {
+                    const entry = document.createElement('p');
+                    entry.innerHTML = `Entry ${index + 1}: <span class="font-semibold">${pred.prediction.toFixed(2)}</span> Mbps (Class: <span class="font-semibold">${pred.class}</span>)`;
+                    predictionsList.appendChild(entry);
+                });
+
+                const resultElement = document.getElementById('predictionResult');
+                document.getElementById('metric-r2').textContent = result.metrics.R2.toFixed(4);
+                document.getElementById('metric-log-mape').textContent = result.metrics.Log_MAPE.toFixed(4);
+                document.getElementById('metric-smape').textContent = result.metrics.SMAPE.toFixed(4);
+                document.getElementById('metric-rmse').textContent = result.metrics.RMSE.toFixed(4);
+                document.getElementById('metric-mae').textContent = result.metrics.MAE.toFixed(4);
+                document.getElementById('threshold-low').textContent = result.metrics.Classification_Thresholds.Low.toFixed(2);
+                document.getElementById('threshold-medium').textContent = result.metrics.Classification_Thresholds.Medium.toFixed(2);
+                resultElement.classList.remove('hidden');
+            } catch (error) {
+                console.error('Prediction error:', error);
+                alert('Prediction failed: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

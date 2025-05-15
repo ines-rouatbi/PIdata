@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Throughput Prediction for mmWaves based 5G Networks</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+            color: #e0e7ff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 2.5rem;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            animation: fadeIn 1.2s ease-in-out;
+            max-width: 95%;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        #map {
+            height: 300px;
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            transition: transform 0.4s ease;
+        }
+        #map:hover {
+            transform: scale(1.03);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid #00d4ff;
+            border-radius: 10px;
+            padding: 0.75rem;
+            color: #e0e7ff;
+            transition: all 0.4s ease;
+            width: 100%;
+        }
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 15px #00d4ff;
+            border-color: #ff00ff;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .input-field:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            transition: all 0.4s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-save {
+            background: linear-gradient(90deg, #ff007a, #ff00ff);
+        }
+        .btn-save:hover {
+            background: linear-gradient(90deg, #ff00ff, #ff007a);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn-predict {
+            background: linear-gradient(90deg, #00d4ff, #00ffaa);
+        }
+        .btn-predict:hover {
+            background: linear-gradient(90deg, #00ffaa, #00d4ff);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .error-message {
+            color: #ff5555;
+            font-size: 0.875rem;
+        }
+        .prediction-result {
+            animation: slideIn 0.7s ease-in-out;
+            background: rgba(0, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #00d4ff;
+        }
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+                max-width: 98%;
+            }
+            #map {
+                height: 200px;
+            }
+            .btn {
+                padding: 0.5rem 1.5rem;
+                font-size: 0.875rem;
+            }
+            .flex-col-sm-flex-row {
+                flex-direction: column !important;
+               
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-3xl font-bold text-center mb-6">Throughput Prediction for mmWaves based 5G Networks</h2>
+        <form id="dataForm" class="space-y-4">
+            <!-- Map Location -->
+            <div class="space-y-2">
+                <label class="block text-sm font-medium">Map Location</label>
+                <div id="map"></div>
+                <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+                    <div class="flex-1">
+                        <label for="latitude" class="block text-sm font-medium">Latitude</label>
+                        <input type="number" step="0.00000001" id="latitude" name="latitude" value="44.97531395"
+                               class="input-field">
+                        <p id="latitude-error" class="error-message hidden">Value must be a valid number.</p>
+                    </div>
+                    <div class="flex-1">
+                        <label for="longitude" class="block text-sm font-medium">Longitude</label>
+                        <input type="number" step="0.00000001" id="longitude" name="longitude" value="-93.25931635"
+                               class="input-field">
+                        <p id="longitude-error" class="error-message hidden">Value must be a valid number.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Run Number -->
+            <div class="space-y-1">
+                <label for="run_num" class="block text-sm font-medium">Run Number</label>
+                <input type="number" id="run_num" name="run_num" value="1" class="input-field">
+                <p id="run_num-error" class="error-message hidden">Value must be a positive integer.</p>
+            </div>
+
+            <!-- Sequence Number -->
+            <div class="space-y-1">
+                <label for="seq_num" class="block text-sm font-medium">Sequence Number</label>
+                <input type="number" step="0.1" id="seq_num" name="seq_num" value="1.0" class="input-field">
+                <p id="seq_num-error" class="error-message hidden">Value must be a positive number.</p>
+            </div>
+
+            <!-- Abstract Signal Strength -->
+            <div class="space-y-1">
+                <label for="abstractSignalStr" class="block text-sm font-medium">Abstract Signal Strength</label>
+                <input type="number" id="abstractSignalStr" name="abstractSignalStr" value="2" min="1" max="5"
+                       class="input-field">
+                <p id="abstractSignalStr-error" class="error-message hidden">Value must be between 1 and 5.</p>
+            </div>
+
+            <!-- Moving Speed -->
+            <div class="space-y-1">
+                <label for="movingSpeed" class="block text-sm font-medium">Moving Speed (m/s)</label>
+                <input type="number" step="0.00000001" id="movingSpeed" name="movingSpeed" value="0.09488939755" min="0" max="10"
+                       class="input-field">
+                <p id="movingSpeed-error" class="error-message hidden">Speed must be between 0 and 10 m/s.</p>
+            </div>
+
+            <!-- Compass Direction -->
+            <div class="space-y-1">
+                <label for="compassDirection" class="block text-sm font-medium">Compass Direction (degrees)</label>
+                <input type="number" id="compassDirection" name="compassDirection" value="150" min="0" max="360"
+                       class="input-field">
+                <p id="compassDirection-error" class="error-message hidden">Direction must be between 0 and 360 degrees.</p>
+            </div>
+
+            <!-- NR Status -->
+            <div class="space-y-1">
+                <label for="nrStatus" class="block text-sm font-medium">NR Status</label>
+                <select id="nrStatus" name="nrStatus" class="input-field">
+                    <option value="NOT_RESTRICTED" selected>NOT_RESTRICTED</option>
+                    <option value="CONNECTED">CONNECTED</option>
+                </select>
+            </div>
+
+            <!-- LTE RSSI -->
+            <div class="space-y-1">
+                <label for="lte_rssi" class="block text-sm font-medium">LTE RSSI (dBm)</label>
+                <input type="number" step="0.1" id="lte_rssi" name="lte_rssi" value="-61.0" min="-120" max="-30"
+                       class="input-field">
+                <p id="lte_rssi-error" class="error-message hidden">Value must be between -120 and -30 dBm.</p>
+            </div>
+
+            <!-- LTE RSRP -->
+            <div class="space-y-1">
+                <label for="lte_rsrp" class="block text-sm font-medium">LTE RSRP (dBm)</label>
+                <input type="number" step="0.1" id="lte_rsrp" name="lte_rsrp" value="-94" min="-140" max="-44"
+                       class="input-field">
+                <p id="lte_rsrp-error" class="error-message hidden">Value must be between -140 and -44 dBm.</p>
+            </div>
+
+            <!-- LTE RSRQ -->
+            <div class="space-y-1">
+                <label for="lte_rsrq" class="block text-sm font-medium">LTE RSRQ (dB)</label>
+                <input type="number" step="0.1" id="lte_rsrq" name="lte_rsrq" value="-14.0" min="-20" max="0"
+                       class="input-field">
+                <p id="lte_rsrq-error" class="error-message hidden">Value must be between -20 and 0 dB.</p>
+            </div>
+
+            <!-- LTE RSSNR -->
+            <div class="space-y-1">
+                <label for="lte_rssnr" class="block text-sm font-medium">LTE RSSNR (dB)</label>
+                <input type="number" step="0.1" id="lte_rssnr" name="lte_rssnr" value="2147483647.0" min="-30" max="2147483647"
+                       class="input-field">
+                <p id="lte_rssnr-error" class="error-message hidden">Value must be between -30 and 2147483647 dB.</p>
+            </div>
+
+            <!-- NR SS RSRP -->
+            <div class="space-y-1">
+                <label for="nr_ssRsrp" class="block text-sm font-medium">NR SS RSRP (dBm)</label>
+                <input type="number" step="0.1" id="nr_ssRsrp" name="nr_ssRsrp" value="-94" min="-140" max="-44"
+                       class="input-field">
+                <p id="nr_ssRsrp-error" class="error-message hidden">Value must be between -140 and -44 dBm or empty.</p>
+            </div>
+
+            <!-- NR SS RSRQ -->
+            <div class="space-y-1">
+                <label for="nr_ssRsrq" class="block text-sm font-medium">NR SS RSRQ (dB)</label>
+                <input type="number" step="0.1" id="nr_ssRsrq" name="nr_ssRsrq" value="-14" min="-20" max="0"
+                       class="input-field">
+                <p id="nr_ssRsrq-error" class="error-message hidden">Value must be between -20 and 0 dB or empty.</p>
+            </div>
+
+            <!-- NR SS SINR -->
+            <div class="space-y-1">
+                <label for="nr_ssSinr" class="block text-sm font-medium">NR SS SINR (dB)</label>
+                <input type="number" step="0.1" id="nr_ssSinr" name="nr_ssSinr" value="0" min="-20" max="40"
+                       class="input-field">
+                <p id="nr_ssSinr-error" class="error-message hidden">Value must be between -20 and 40 dB or empty.</p>
+            </div>
+
+            <!-- Mobility Mode -->
+            <div class="space-y-1">
+                <label for="mobility_mode" class="block text-sm font-medium">Mobility Mode</label>
+                <select id="mobility_mode" name="mobility_mode" class="input-field">
+                    <option value="driving" selected>Driving</option>
+                    <option value="walking">Walking</option>
+                </select>
+            </div>
+
+            <!-- Trajectory Direction -->
+            <div class="space-y-1">
+                <label for="trajectory_direction" class="block text-sm font-medium">Trajectory Direction</label>
+                <select id="trajectory_direction" name="trajectory_direction" class="input-field">
+                    <option value="CW" selected>Clockwise</option>
+                    <option value="ACW">Anti-Clockwise</option>
+                </select>
+            </div>
+
+            <!-- Tower ID -->
+            <div class="space-y-1">
+                <label for="tower_id" class="block text-sm font-medium">Tower ID</label>
+                <input type="number" id="tower_id" name="tower_id" value="16" min="1" max="16" class="input-field">
+                <p id="tower_id-error" class="error-message hidden">Tower ID must be between 1 and 16.</p>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row justify-between pt-4 space-y-2 sm:space-y-0 flex-col-sm-flex-row">
+                <button type="button" id="saveBtn" class="btn btn-save">Save</button>
+                <button type="button" id="predictBtn" class="btn btn-predict">Predict</button>
+            </div>
+
+            <!-- Prediction Result -->
+            <div id="predictionResult" class="mt-4 text-center hidden prediction-result">
+                <p class="text-lg font-semibold">Throughput: <span id="throughputValue"></span> Mbps</p>
+                <p class="text-lg font-semibold">Class: <span id="throughputClass"></span></p>
+                <p class="text-lg font-semibold">Metrics:</p>
+                <ul>
+                    <li>R2: <span id="metric-r2"></span></li>
+                    <li>Log MAPE: <span id="metric-log-mape"></span></li>
+                    <li>SMAPE: <span id="metric-smape"></span></li>
+                    <li>RMSE: <span id="metric-rmse"></span></li>
+                    <li>MAE: <span id="metric-mae"></span></li>
+                    <li>Classification Thresholds - Low: <span id="threshold-low"></span>, Medium: <span id="threshold-medium"></span></li>
+                </ul>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([44.97531395, -93.25931635], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        var marker = L.marker([44.97531395, -93.25931635]).addTo(map)
+            .bindPopup('Click to update location.')
+            .openPopup();
+        map.on('click', function(e) {
+            marker.setLatLng(e.latlng);
+            document.getElementById('latitude').value = e.latlng.lat.toFixed(8);
+            document.getElementById('longitude').value = e.latlng.lng.toFixed(8);
+            marker.openPopup();
+        });
+
+        // Validation functions
+        function validateField(field, min, max, errorId, allowEmpty = false) {
+            const value = field.value;
+            const errorElement = document.getElementById(errorId);
+            if (allowEmpty && value === '') {
+                errorElement.classList.add('hidden');
+                return true;
+            }
+            const num = parseFloat(value);
+            if (isNaN(num) || num < min || num > max) {
+                errorElement.classList.remove('hidden');
+                return false;
+            }
+            errorElement.classList.add('hidden');
+            return true;
+        }
+
+        function validateNumber(field, errorId, allowNegative = true) {
+            const value = field.value;
+            const errorElement = document.getElementById(errorId);
+            const num = parseFloat(value);
+            if (isNaN(num) || (!allowNegative && num < 0)) {
+                errorElement.classList.remove('hidden');
+                return false;
+            }
+            errorElement.classList.add('hidden');
+            return true;
+        }
+
+        // Add validation listeners
+        document.getElementById('latitude').addEventListener('input', function() {
+            validateNumber(this, 'latitude-error');
+        });
+        document.getElementById('longitude').addEventListener('input', function() {
+            validateNumber(this, 'longitude-error');
+        });
+        document.getElementById('run_num').addEventListener('input', function() {
+            validateNumber(this, 'run_num-error', false);
+        });
+        document.getElementById('seq_num').addEventListener('input', function() {
+            validateNumber(this, 'seq_num-error', false);
+        });
+        document.getElementById('abstractSignalStr').addEventListener('input', function() {
+            validateField(this, 1, 5, 'abstractSignalStr-error');
+        });
+        document.getElementById('movingSpeed').addEventListener('input', function() {
+            validateField(this, 0, 10, 'movingSpeed-error');
+        });
+        document.getElementById('compassDirection').addEventListener('input', function() {
+            validateField(this, 0, 360, 'compassDirection-error');
+        });
+        document.getElementById('lte_rssi').addEventListener('input', function() {
+            validateField(this, -120, -30, 'lte_rssi-error');
+        });
+        document.getElementById('lte_rsrp').addEventListener('input', function() {
+            validateField(this, -140, -44, 'lte_rsrp-error');
+        });
+        document.getElementById('lte_rsrq').addEventListener('input', function() {
+            validateField(this, -20, 0, 'lte_rsrq-error');
+        });
+        document.getElementById('lte_rssnr').addEventListener('input', function() {
+            validateField(this, -30, 2147483647, 'lte_rssnr-error');
+        });
+        document.getElementById('nr_ssRsrp').addEventListener('input', function() {
+            validateField(this, -140, -44, 'nr_ssRsrp-error', true);
+        });
+        document.getElementById('nr_ssRsrq').addEventListener('input', function() {
+            validateField(this, -20, 0, 'nr_ssRsrq-error', true);
+        });
+        document.getElementById('nr_ssSinr').addEventListener('input', function() {
+            validateField(this, -20, 40, 'nr_ssSinr-error', true);
+        });
+        document.getElementById('tower_id').addEventListener('input', function() {
+            validateField(this, 1, 16, 'tower_id-error');
+        });
+
+        // Predict button logic
+        document.getElementById('predictBtn').addEventListener('click', async function() {
+            // Validate all fields
+            const validations = [
+                validateNumber(document.getElementById('latitude'), 'latitude-error'),
+                validateNumber(document.getElementById('longitude'), 'longitude-error'),
+                validateNumber(document.getElementById('run_num'), 'run_num-error', false),
+                validateNumber(document.getElementById('seq_num'), 'seq_num-error', false),
+                validateField(document.getElementById('abstractSignalStr'), 1, 5, 'abstractSignalStr-error'),
+                validateField(document.getElementById('movingSpeed'), 0, 10, 'movingSpeed-error'),
+                validateField(document.getElementById('compassDirection'), 0, 360, 'compassDirection-error'),
+                validateField(document.getElementById('lte_rssi'), -120, -30, 'lte_rssi-error'),
+                validateField(document.getElementById('lte_rsrp'), -140, -44, 'lte_rsrp-error'),
+                validateField(document.getElementById('lte_rsrq'), -20, 0, 'lte_rsrq-error'),
+                validateField(document.getElementById('lte_rssnr'), -30, 2147483647, 'lte_rssnr-error'),
+                validateField(document.getElementById('nr_ssRsrp'), -140, -44, 'nr_ssRsrp-error', true),
+                validateField(document.getElementById('nr_ssRsrq'), -20, 0, 'nr_ssRsrq-error', true),
+                validateField(document.getElementById('nr_ssSinr'), -20, 40, 'nr_ssSinr-error', true),
+                validateField(document.getElementById('tower_id'), 1, 16, 'tower_id-error')
+            ];
+
+            if (!validations.every(v => v)) {
+                alert('Please correct the errors before predicting.');
+                return;
+            }
+
+            // Prepare form data
+            const formData = new FormData(document.getElementById('dataForm'));
+
+            // Log form data for debugging
+            console.log('Form Data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Fetch error:', errorText);
+                    throw new Error(`Fetch failed with status ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                if (result.error) {
+                    console.error('Server error:', result.error);
+                    throw new Error(result.error);
+                }
+
+                // Log response for debugging
+                console.log('Prediction Response:', result);
+
+                // Update UI with prediction data
+                const resultElement = document.getElementById('predictionResult');
+                document.getElementById('throughputValue').textContent = result.prediction.toFixed(2);
+                document.getElementById('throughputClass').textContent = result.class;
+                document.getElementById('metric-r2').textContent = result.metrics.R2 ? result.metrics.R2.toFixed(4) : 'N/A';
+                document.getElementById('metric-log-mape').textContent = result.metrics.Log_MAPE ? result.metrics.Log_MAPE.toFixed(4) : 'N/A';
+                document.getElementById('metric-smape').textContent = result.metrics.SMAPE ? result.metrics.SMAPE.toFixed(4) : 'N/A';
+                document.getElementById('metric-rmse').textContent = result.metrics.RMSE ? result.metrics.RMSE.toFixed(4) : 'N/A';
+                document.getElementById('metric-mae').textContent = result.metrics.MAE ? result.metrics.MAE.toFixed(4) : 'N/A';
+                document.getElementById('threshold-low').textContent = result.metrics.Classification_Thresholds?.Low?.toFixed(2) || 'N/A';
+                document.getElementById('threshold-medium').textContent = result.metrics.Classification_Thresholds?.Medium?.toFixed(2) || 'N/A';
+                resultElement.classList.remove('hidden');
+            } catch (error) {
+                console.error('Prediction error:', error);
+                alert('Prediction failed: ' + error.message);
+            }
+        });
+
+        // Save button logic
+        document.getElementById('saveBtn').addEventListener('click', async function() {
+            // Validate all fields
+            const validations = [
+                validateNumber(document.getElementById('latitude'), 'latitude-error'),
+                validateNumber(document.getElementById('longitude'), 'longitude-error'),
+                validateNumber(document.getElementById('run_num'), 'run_num-error', false),
+                validateNumber(document.getElementById('seq_num'), 'seq_num-error', false),
+                validateField(document.getElementById('abstractSignalStr'), 1, 5, 'abstractSignalStr-error'),
+                validateField(document.getElementById('movingSpeed'), 0, 10, 'movingSpeed-error'),
+                validateField(document.getElementById('compassDirection'), 0, 360, 'compassDirection-error'),
+                validateField(document.getElementById('lte_rssi'), -120, -30, 'lte_rssi-error'),
+                validateField(document.getElementById('lte_rsrp'), -140, -44, 'lte_rsrp-error'),
+                validateField(document.getElementById('lte_rsrq'), -20, 0, 'lte_rsrq-error'),
+                validateField(document.getElementById('lte_rssnr'), -30, 2147483647, 'lte_rssnr-error'),
+                validateField(document.getElementById('nr_ssRsrp'), -140, -44, 'nr_ssRsrp-error', true),
+                validateField(document.getElementById('nr_ssRsrq'), -20, 0, 'nr_ssRsrq-error', true),
+                validateField(document.getElementById('nr_ssSinr'), -20, 40, 'nr_ssSinr-error', true),
+                validateField(document.getElementById('tower_id'), 1, 16, 'tower_id-error')
+            ];
+
+            if (!validations.every(v => v)) {
+                alert('Please correct the errors before saving.');
+                return;
+            }
+
+            // Prepare form data
+            const formData = new FormData(document.getElementById('dataForm'));
+
+            // Log form data for debugging
+            console.log('Save Form Data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
+            try {
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Fetch error:', errorText);
+                    throw new Error(`Fetch failed with status ${response.status}: ${errorText}`);
+                }
+
+                // Redirect to the data view page
+                window.location.href = response.url;
+            } catch (error) {
+                console.error('Save error:', error);
+                alert('Saving failed: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/418566311389381111/d462e9ccda8d4d51a8d0d1b65018f296/artifacts
+end_time: 1747296057295
+entry_point_name: ''
+experiment_id: '418566311389381111'
+lifecycle_stage: active
+run_id: d462e9ccda8d4d51a8d0d1b65018f296
+run_name: PredictTrainRun
+run_uuid: d462e9ccda8d4d51a8d0d1b65018f296
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1747296057074
+status: 4
+tags: []
+user_id: ines

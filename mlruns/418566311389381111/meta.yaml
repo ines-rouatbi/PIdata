@@ -1,0 +1,6 @@
+artifact_location: mlflow-artifacts:/418566311389381111
+creation_time: 1747289994669
+experiment_id: '418566311389381111'
+last_update_time: 1747289994669
+lifecycle_stage: active
+name: ThroughputPredictionExperiment
